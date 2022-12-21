@@ -1,10 +1,17 @@
 import db_tools as db
 import json
+from datetime import datetime
+
 
 class Tag_Utility:
     __TAG_PREFIX = 'label'
     __TAG_NAME = ["grey", "red", "orange", "yellow", "green", "cyan", "blue","purple","pink"]
     __TAG_COLOR_TYPE = ['light', 'normal', 'deep']
+
+    def __now_timestamp(self):
+        # datetime object containing current date and time
+        now = datetime.now()
+        return str(int(now.timestamp()))
 
     def __init__(self):
         self.TAG_COLORS = []
@@ -62,8 +69,9 @@ class Tag_Utility:
         query_add_tag = 'INSERT INTO `user_option` (`userID`, `type`, `key`, `value`, `createTime`, `modifyTime`) VALUES' \
             + '     (1, \'User.tagList\', \'ID-' + str(tag_id[1]) \
             + '\', \'{\n    "name": "' + tag_name \
-            + '",\n    "style": "' + tag_color + '",\n    "sort": ' + str(tag_id[1]) + ',\n    "id": ' + str(tag_id[1]) + ',\n    "createTime": 1669969776,\n    "modifyTime": 1669969776\n}\' '\
-            +', 1669969776, 1669969776);'   
+            + '",\n    "style": "' + tag_color + '",\n    "sort": ' + str(tag_id[1]) + ',\n    "id": ' \
+            + str(tag_id[1]) + ',\n    "createTime": ' + self.__now_timestamp() + ',\n    "modifyTime": ' \
+            + self.__now_timestamp + '\n}\', ' + self.__now_timestamp() + ', ' + self.__now_timestamp() + ');'
         ins = db._insert(query_add_tag)
         if ins[0] == -1:
             raise Exception("Error on insert to db (\"create_tag\")\n", ins[1])
@@ -77,7 +85,7 @@ class Tag_Utility:
 
     def add_tag_to_file_or_folder(self, file_or_folder_id, tag_id):
         query = '''INSERT INTO `user_fav` (`userID`, `tagID`, `name`, `path`, `type`, `sort`, `modifyTime`, `createTime`) VALUES
-        (1, {}, '', '{}', 'source', 0, 1670798820, 1670798820);'''.format(tag_id, file_or_folder_id)
+        (1, {}, '', '{}', 'source', 0, {}, {});'''.format(tag_id, file_or_folder_id, self.__now_timestamp(), self.__now_timestamp())
         ins = db._insert(query)
         if ins[0] == -1:
             raise Exception("Error on insert to db (\"add_tag\")\n", ins[1])
