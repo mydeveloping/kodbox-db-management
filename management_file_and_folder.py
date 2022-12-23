@@ -266,6 +266,18 @@ class File_and_Folder_Utility:
         else:
             is_folder = 0
             type = 'mkfile'
+        query_find_duplicate = 'SELECT id from `system_log` where '\
+        ' `userID` = 1 and `type` = \'file.' + type + '\' and `desc` = \'{"sourceID":' + str(source_id) + ',"sourceParent":"'\
+        ' ' + str(source_parent_id) + '","pathName":"' + name + '","pathDisplay":"","userID":"1",'\
+        '"type":"create","desc":{"createType":"' + type + '","name":"' + name + '"},'\
+        '"sourceTarget":' + str(source_id) + ',"ip":"127.0.0.1"}\''
+        sel = db._select(query_find_duplicate)
+        # if there is duplicate value, return it's id.
+        if sel[0] == -1:
+            raise Exception("Error on select from db (\"__count_parent_id\")\n", sel[1])
+        elif sel[1] != 0:
+                return sel[2][0][0]
+        # if there isn't any duplicate value, insert to system log.
         query = 'INSERT INTO `system_log` (`sessionID`, `userID`, `type`, `desc`, `createTime`) VALUES'\
         '(\'' + str(session_id) + '\', 1, \'file.' + type + '\', \'{"sourceID":' + str(source_id) + ',"sourceParent":"'\
         ' ' + str(source_parent_id) + '","pathName":"' + name + '","pathDisplay":"","userID":"1",'\
