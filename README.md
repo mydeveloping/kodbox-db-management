@@ -18,7 +18,7 @@ Note2: If you don't use mysql default config, must change config from Database i
 
 # Files and containing functions internal:
 
-## In db_tools.py
+## In db_tools module (db_tools.py)
 
 ### function \_insert:
 
@@ -144,7 +144,7 @@ del = _delete(query, mydb)
 print(del)
 ```
 
-## In management_file_and_folder.py
+## In management_file_and_folder module (management_file_and_folder.py)
 
 This module contain two classes call "Relation_Utility" and "File_and_Folder_Utility".
 
@@ -186,7 +186,7 @@ like "create_file_on_kodbox" but for create folder.
 "create_file_on_kodbox_with_parent_id" method:
 like "create_file_on_kodbox_with_parent_id" but for create folder.
 
-## In management_tag.py
+## In management_tag module (management_tag.py)
 
 This module a calss that call "Tag_Utility" for create tag, assign a tag to a file or folder, fetch tag list and found is there a tag name in tag list. 
 
