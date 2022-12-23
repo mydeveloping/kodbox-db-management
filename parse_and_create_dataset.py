@@ -14,6 +14,8 @@ def parse_and_split_folders(data_list):
     for dl in data_list:
         folder = dl[0]
         temp = folder.split('/')
+        # temp.insert(0, "Folders")
+        # temp.insert(0, folder)
         dl[0] = temp
 
 def parse_and_split_authors(data_list):
@@ -43,6 +45,7 @@ def parse_and_split_authors(data_list):
         dl[3] = splited_autors[0]
 
 def groups(book_name):
+    # ., +, *, ?, ^, $, (, ), [, ], {, }, |, \.
     regex = r"\([\w\d\s ,\.#&'-]+\)"
     matches = re.finditer(regex, book_name, re.MULTILINE)
     found_tags = []
@@ -52,6 +55,8 @@ def groups(book_name):
     return found_tags
 
 def parse_file_name_and_fetch_details(data_list):
+    # dl[2] = file_name
+    # dl[4] = book_name
     for dl in data_list:
         book_name = dl[4]
         if type(book_name) != type('string'):
@@ -65,22 +70,17 @@ def parse_file_name_and_fetch_details(data_list):
         else:
             file_type = '.' + file_type
         # Remove ISBN from book_name
-        book_name = book_name.replace("({})".format(ISBN), "")
-        found_tags = groups(book_name)
+        # book_name = book_name.replace("({})".format(ISBN), "")
+        found_tags = groups(book_name.replace("({})".format(ISBN), ""))
         tg = []
         for ft in found_tags:
-            book_name = book_name.replace('({})'.format(ft), '')
+            # book_name = book_name.replace('({})'.format(ft), '')
             s = ft.split(',')
             if len(s) > 0:
                 for j in range(len(s)):
                     tg.append(s[j])
             else:
                 tg.append(s)
-
-        # add ISBN to book_name for create unique name
-        if len(ISBN) > 1:
-            book_name = book_name.replace(file_type, '') + '_' + ISBN + file_type
-        dl[4] = book_name
         dl[2] = tg
 
 def size_cat(size_in_byte):
@@ -127,27 +127,47 @@ parse_and_split_authors(data_list)
 parse_file_name_and_fetch_details(data_list)
 size_categorizing(data_list)
 
+# index = 0
+# for i in data_list:
+#     index += 1
+#     if index < 110:
+#         continue
+#     if index > 120 :
+#         break
+#     print(i[4], '\n\n')
+
 def insert_to_db(data_list):
     ffu = mff.File_and_Folder_Utility()
     ru = mff.Relation_Utility()
     si = ffu.calc_session_id()
     documents_folder_id = ffu.create_folder_on_kodbox('Documents', 'Desktop', si)
-    folders_folder_id      = ffu.create_folder_on_kodbox_with_parent_id('Folders', documents_folder_id[0], si)
-    size_cats_folder_id    = ffu.create_folder_on_kodbox_with_parent_id('Size categories', documents_folder_id[0], si)
-    years_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Years', documents_folder_id[0], si)
-    types_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Types', documents_folder_id[0], si)
-    authors_folder_id      = ffu.create_folder_on_kodbox_with_parent_id('Authors', documents_folder_id[0], si)
+    books_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Books', documents_folder_id[0], si)
+    details_folder_id      = ffu.create_folder_on_kodbox_with_parent_id('Details', documents_folder_id[0], si)
+    size_cats_folder_id    = ffu.create_folder_on_kodbox_with_parent_id('Size categories', details_folder_id[0], si)
+    years_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Years', details_folder_id[0], si)
+    types_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Types', details_folder_id[0], si)
+    authors_folder_id      = ffu.create_folder_on_kodbox_with_parent_id('Authors', details_folder_id[0], si)
     #_id 
     writers_folder_id = ffu.create_folder_on_kodbox_with_parent_id('Writers', authors_folder_id[0],si)
     editors_folder_id = ffu.create_folder_on_kodbox_with_parent_id('Editors', authors_folder_id[0],si)
     #_id 
-    details_folder_id = ffu.create_folder_on_kodbox_with_parent_id('Details', documents_folder_id[0], si)    
+    properties_folder_id = ffu.create_folder_on_kodbox_with_parent_id('Properties', details_folder_id[0], si)    
+
+
+    # folders_folder_id      = ffu.create_folder_on_kodbox_with_parent_id('Folders', documents_folder_id[0], si)
     index = 0
+    data_list_count = len(data_list)
     for dl in data_list:
         index += 1
+        # change index for ignore items and start add folder from this index
+        if index < 0:
+           continue
+        # if index > 120 :
+        #     break
+        print('Item    {}    from   {}'.format(index, data_list_count))
         folders = dl[0]
         # is_folder     = dl[1]
-        details       = dl[2]
+        properties       = dl[2]
         authors       = dl[3]
         book_name     = dl[4]
         ISBN          = dl[5]
@@ -156,53 +176,60 @@ def insert_to_db(data_list):
         # size_byte     = dl[8]
         # size_megabyte = dl[9]
         size_cat      = dl[10]
-        print(index, '   ===   ')
         
-        parent_id = folders_folder_id
+        parent_id = books_folder_id
         for f in folders:
             parent_id = ffu.create_folder_on_kodbox_with_parent_id(f, parent_id[0], si)
-        # 1st property
+            # print(f)
+        # 1st property book name
         book_id = ffu.create_file_on_kodbox_with_parent_id(book_name, parent_id[0], si)
+        # print('book_id', book_id)
         
-        # 2nd property
-        details_id_list = []
-        for d in details:
-            details_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(d, details_folder_id[0], si))
+        # 2nd property properties of book
+        properties_id_list = []
+        for prop in properties:
+            properties_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(prop, properties_folder_id[0], si))
         
-        # 3th property
+        # 3th property authors list
         authors_id_list = []
         if authors == 'Unknown':
             authors_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(authors, authors_folder_id[0], si))
         else:
-            for a in range(len(authors[1])):
+            for auth in range(len(authors[1])):
                 if authors[0] == 'editors':
-                    authors_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(a, editors_folder_id[0], si))
+                    authors_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(auth, editors_folder_id[0], si))
                 elif authors[0] == 'writers':
-                    authors_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(a, writers_folder_id[0], si))
-
-        # 4th property
+                    authors_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(auth, writers_folder_id[0], si))
+        # 4th property file type
         file_type_id = ffu.create_folder_on_kodbox_with_parent_id(file_type, types_folder_id[0], si)
 
-        # 5th property
+        # 5th property year
         year_id = ffu.create_folder_on_kodbox_with_parent_id(year, years_folder_id[0], si)
 
-        # 6th property
+        # 6th property size category
         size_cat_id = ffu.create_folder_on_kodbox_with_parent_id(size_cat, size_cats_folder_id[0], si)
 
-        # add relation 1
-        for dil in details_id_list:
-            ru.add_relation(book_id[0], dil[0])
-        # add relation 2
+        # add relation book and properties
+        # print(properties_id_list)
+        for pil in properties_id_list:
+            # print(dil[0])
+            # print(book_id)
+            ru.add_relation(book_id[0], pil[0])
+            ru.add_relation(pil[0], book_id[0])
+        # print(300)
+        # add relation book and authors(editors/writers)
         for ail in authors_id_list:
             ru.add_relation(book_id[0], ail[0])
-        # add relation 3
+            ru.add_relation(ail[0], book_id[0])
+        # add relation book and file type
         ru.add_relation(book_id[0], file_type_id[0])
-        # add relation 4
+        ru.add_relation(file_type_id[0], book_id[0])
+        # add relation book and year
         ru.add_relation(book_id[0], year_id[0])
-        # add relation 5
+        ru.add_relation(year_id[0], book_id[0])
+        # add relation book and size category
         ru.add_relation(book_id[0], size_cat_id[0])
-
-        print('\n')
+        ru.add_relation(size_cat_id[0], book_id[0])
 
 insert_to_db(data_list)
 
