@@ -1,20 +1,27 @@
+
 # kodbox-db-management
 Create and management folders, files, tags, and relations in kodbox db with python.
 
 This project create for my teacher excercise's for Data visualization class.
 
-My teacher Dr. M.B. Ghaznavi Ghooshchi issue this project.
+My teacher's name is Dr. "**M.B.  Ghaznavi - Ghoushchi**".
 
 # How to use.
+
+>Download this project.
+Extract it to a folder.
+Open terminal/CMD and go to project folder.
+Script and run this:
+
+```batch 
+python parse_and_create_dataset.py 
 ```
-1- download this project.
-2- Extract file to a folder.
-3- Open terminal/CMD and go to project folder.
-4- Write below code:
-python parse_and_create_dataset.py
-```
-Note: You can use your data to import to kodbox. You only follow csv file like "ParsedBN.csv".
-Note2: If you don't use mysql default config, must change config from Database in "db_tools.py ".
+
+>Note: You can use your data to import to kodbox. You only follow csv file like "ParsedBN.csv".
+
+>Note2: If you don't use mysql default config, must change config from Database in "db_tools.py ".
+
+>Note3: If your code stops with any problem (like power off the system, wrong press Ctrl + C or Ctrl + Pause/Break, or any others.) when you run the code again, this program continues from the last index of data..
 
 # Files and containing functions internal:
 
