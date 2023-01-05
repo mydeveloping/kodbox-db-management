@@ -2,6 +2,7 @@ import management_file_and_folder as mff
 import pandas as pd
 import re
 import math
+import os
 
 data = pd.read_csv('./ParsedBN.csv')
 
@@ -136,6 +137,26 @@ size_categorizing(data_list)
 #         break
 #     print(i[4], '\n\n')
 
+log_file_name = 'log.txt'
+
+def read_index():
+    if os.path.exists(log_file_name) == True:
+        log_file = open(log_file_name,'r+')
+        lines = log_file.readlines()
+    else:
+        lines = []
+    return lines
+
+def write_index(index):
+    log_file = open(log_file_name,'w+')
+    log_file.write(str(index))
+
+current_index = read_index()
+if len(current_index) > 0:
+    current_index = int(current_index[0])
+else:
+    current_index = 0
+
 def insert_to_db(data_list):
     ffu = mff.File_and_Folder_Utility()
     ru = mff.Relation_Utility()
@@ -159,8 +180,9 @@ def insert_to_db(data_list):
     data_list_count = len(data_list)
     for dl in data_list:
         index += 1
+        write_index(index)
         # change index for ignore items and start add folder from this index
-        if index < 0:
+        if index < current_index:
            continue
         # if index > 120 :
         #     break
