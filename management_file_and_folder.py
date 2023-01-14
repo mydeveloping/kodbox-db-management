@@ -68,6 +68,12 @@ class Relation_Utility:
         else:
             raise Exception("Error on select from db (\"add_relation\")\n")
 
+    def add_bi_directional_relation(self, first_id, second_id):
+        first = self.add_relation(first_id, second_id)
+        second = self.add_relation(second_id, first_id)
+        return (first, second)
+
+
 # Create file or folder in kodbox            
 class File_and_Folder_Utility:
 
@@ -357,7 +363,7 @@ class File_and_Folder_Utility:
             self.__create_system_log(session_id, folder_id, parent_id, folder_name, 1)
             return (folder_id, parent_id)
         except Exception as e:
-            raise Exception('When create folder below error raised:\n', e)
+            raise Exception('When create folder raised below error:\n', e)
 
     def create_folder_on_kodbox_with_parent_id(self, folder_name, parent_id, session_id):
         try:
@@ -368,7 +374,7 @@ class File_and_Folder_Utility:
             self.__create_system_log(session_id, folder_id, parent_id, folder_name, 1)
             return (folder_id, parent_id)
         except Exception as e:
-            raise Exception('When create folder below error raised:\n', e)
+            raise Exception('When create folder raised below error:\n', e)
 
     def create_file_on_kodbox(self, file_name, parent_name, session_id):
         try:
@@ -382,15 +388,16 @@ class File_and_Folder_Utility:
             self.__create_system_log(session_id, file_id, parent_id, file_name, 1)
             return (file_id, parent_id)
         except Exception as e:
-            raise Exception('When create file below error raised:\n', e) 
+            raise Exception('When create file raised below error:\n', e) 
 
     def create_file_on_kodbox_with_parent_id(self, file_name, parent_id, session_id):
         try:
             file_name = str(file_name)
             file_name = file_name.replace("'", "''")
+
             file_id = self.__create_file_with_parent_id(file_name, parent_id)
             self.__create_source_event(file_name, 0)
             self.__create_system_log(session_id, file_id, parent_id, file_name, 1)
             return (file_id, parent_id)
         except Exception as e:
-            raise Exception('When create file below error raised:\n', e)
+            raise Exception('When create file raised below error:\n', e)

@@ -1,191 +1,101 @@
 import management_file_and_folder as mff
 import pandas as pd
-import re
-import math
-import os
+import log_management as lm
+import dataset_parse
 
 data = pd.read_csv('./ParsedBN.csv')
 
 # folders = 0, authors = 3, book_name = 4, ISBN = 5, file_type = 6, published_year = 7, file_size = 8 
 data_list = data.values.tolist() 
-tags = []
-file_size_cats = []
 
-def parse_and_split_folders(data_list):
-    for dl in data_list:
-        folder = dl[0]
-        temp = folder.split('/')
-        # temp.insert(0, "Folders")
-        # temp.insert(0, folder)
-        dl[0] = temp
+dp = dataset_parse.DatasetParse()
 
-def parse_and_split_authors(data_list):
-    for dl in data_list:
-        author = dl[3]
-        splited_autors = []    
-        author_type = 'writers'
-        try:
-            regex = r"\([eE][dD][sS]*\.\)"
-            matches = re.finditer(regex, dl[3], re.MULTILINE)
-            match = [*matches]
-            if len(match) > 0:
-                author = author.replace(match[0].group(), '')
-                author = author.split()[0]
-                author_type = 'editors'
-        except:
-            pass
-        try:
-            auth = []
-            a = author.split(',')
-            for j in range(len(a)):
-                auth.append(a[j])
-            
-            splited_autors.append([author_type, auth])
-        except:
-            splited_autors.append('Unknown')
-        dl[3] = splited_autors[0]
+# change data format for every columns and normalization them.
+dp.parse_and_split_folders(data_list)
+dp.parse_and_split_authors(data_list)
+dp.parse_file_name_and_fetch_details(data_list)
+dp.size_categorizing(data_list)
 
-def groups(book_name):
-    # ., +, *, ?, ^, $, (, ), [, ], {, }, |, \.
-    regex = r"\([\w\d\s ,\.#&'-]+\)"
-    matches = re.finditer(regex, book_name, re.MULTILINE)
-    found_tags = []
-    for matchNum, match in enumerate(matches, start=1):
-        g = match.group().replace('(', '').replace(')', '')
-        found_tags.append(g)
-    return found_tags
+# create log file class to save logs.
+log = lm.LogFile()
+current_index = log.current_index()
 
-def parse_file_name_and_fetch_details(data_list):
-    # dl[2] = file_name
-    # dl[4] = book_name
-    for dl in data_list:
-        book_name = dl[4]
-        if type(book_name) != type('string'):
-            continue
-        ISBN = dl[5]
-        file_type = dl[6]
-        if type(ISBN) is not str:
-            ISBN = ''
-        if type(file_type) is not str:
-            file_type = ''
-        else:
-            file_type = '.' + file_type
-        # Remove ISBN from book_name
-        # book_name = book_name.replace("({})".format(ISBN), "")
-        found_tags = groups(book_name.replace("({})".format(ISBN), ""))
-        tg = []
-        for ft in found_tags:
-            # book_name = book_name.replace('({})'.format(ft), '')
-            s = ft.split(',')
-            if len(s) > 0:
-                for j in range(len(s)):
-                    tg.append(s[j])
-            else:
-                tg.append(s)
-        dl[2] = tg
-
-def size_cat(size_in_byte):
-    KB = 1024
-    MB = KB * 1024
+# function for create or select requirement folders.
+def create_or_select_requirement_folders(sesstion_id):
+    ffu = mff.File_and_Folder_Utility()    
     
-    try:
-        if math.isnan(size_in_byte):
-            return 'Unknown'
-        elif size_in_byte <= 100 * KB:
-            return 'Less than 100 KB'
-        elif (size_in_byte > 100 * KB) and (size_in_byte <= 200 * KB):
-            return 'Between 100 and 200 KB'
-        elif (size_in_byte > 200 * KB) and (size_in_byte <= 500 * KB):
-            return 'Between 200 and 500 KB'
-        elif (size_in_byte > 500 * KB) and (size_in_byte <= 1 * MB):
-            return 'Between 0.5 and 1 MB'
-        elif (size_in_byte > 1 * MB) and (size_in_byte <= 2 * MB):
-            return 'Between 1 and 2 MB'
-        elif (size_in_byte > 2 * MB) and (size_in_byte <= 5 * MB):
-            return 'Between 2 and 5 MB'
-        elif (size_in_byte > 5 * MB) and (size_in_byte <= 10 * MB):
-            return 'Between 5 and 10 MB'
-        elif (size_in_byte > 10 * MB) and (size_in_byte <= 50 * MB):
-            return 'Between 10 and 50 MB'
-        elif (size_in_byte > 50 * MB) and (size_in_byte <= 100 * MB):
-            return 'Between 50 and 100 MB'
-        elif (size_in_byte > 100 * MB) and (size_in_byte <= 500 * MB):
-            return 'Between 100 and 500 MB'
-        else:
-            return 'Greater than 500 MB'
-    except:
-        return 'Unknown'
+    log.write_log("Create/Select folder", "Create/Select \"Documents\" folder on Desktop and get this id.")
+    documents_folder_id = ffu.create_folder_on_kodbox('Documents', 'Desktop', sesstion_id)
+    
+    log.write_log("Create/Select folder", "Create/Select \"Books\" folder in Desktop\\Document folder and get this id.")
+    books_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Books', documents_folder_id[0], sesstion_id)
+    
+    log.write_log("Create/Select folder", "Create/Select \"Details\" folder in Desktop\\Document folder and get this id.")
+    details_folder_id      = ffu.create_folder_on_kodbox_with_parent_id('Details', documents_folder_id[0], sesstion_id)
+    
+    log.write_log("Create/Select folder", "Create/Select \"Size categories\" folder in Desktop\\Documents\\Details folder and get this id.")
+    size_cats_folder_id    = ffu.create_folder_on_kodbox_with_parent_id('Size categories', details_folder_id[0], sesstion_id)
+    
+    log.write_log("Create/Select folder", "Create/Select \"Years\" folder in Desktop\\Documents\\Details folder and get this id.")
+    years_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Years', details_folder_id[0], sesstion_id)
+    
+    log.write_log("Create/Select folder", "Create/Select \"Types\" folder in Desktop\\Documents\\Details folder and get this id.")
+    types_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Types', details_folder_id[0], sesstion_id)
+    
+    log.write_log("Create/Select folder", "Create/Select \"Authors\" folder in Desktop\\Documents\\Details folder and get this id.")
+    authors_folder_id      = ffu.create_folder_on_kodbox_with_parent_id('Authors', details_folder_id[0], sesstion_id)
+    #_id 
+    
+    log.write_log("Create/Select folder", "Create/Select \"Writers\" folder in Desktop\\Documents\\Details\\Authors folder and get this id.")
+    writers_folder_id = ffu.create_folder_on_kodbox_with_parent_id('Writers', authors_folder_id[0],sesstion_id)
+    
+    log.write_log("Create/Select folder", "Create/Select \"Editors\" folder in Desktop\\Documents\\Details\\Authors folder and get this id.")
+    editors_folder_id = ffu.create_folder_on_kodbox_with_parent_id('Editors', authors_folder_id[0],sesstion_id)
+    #_id 
+    
+    log.write_log("Create/Select folder", "Create/Select \"Properties\" folder in Desktop\\Documents\\Details folder and get this id.")
+    properties_folder_id = ffu.create_folder_on_kodbox_with_parent_id('Properties', details_folder_id[0], sesstion_id) 
+    return books_folder_id, size_cats_folder_id, years_folder_id, types_folder_id, authors_folder_id, writers_folder_id, editors_folder_id, properties_folder_id
 
-def size_categorizing(data_list):
-    # dl[8] = file_size
-    for dl in data_list:
-        file_size = dl[8]
-        size_category = size_cat(file_size)
-        dl.append(size_category)
+# function for create relation between entities like, books, folders, authors and etc.
+def create_relations(book_id, properties_id_list, authors_id_list, file_type_id, year_id, size_cat_id):
+    ru = mff.Relation_Utility()
+    # add relation book and properties
+    for pil in properties_id_list:
+        log.write_log("Create relation", "Create relation between id\'s {} and {}".format(book_id[0], pil[0]))
+        ru.add_bi_directional_relation(book_id[0], pil[0])
+    # add relation book and authors(editors/writers)
+    for ail in authors_id_list:
+        log.write_log("Create relation", "Create relation between id\'s {} and {}".format(book_id[0], ail[0]))
+        ru.add_bi_directional_relation(book_id[0], ail[0])
+    # add relation book and file type
+    log.write_log("Create relation", "Create relation between id\'s {} and {}".format(book_id[0], file_type_id[0]))
+    ru.add_bi_directional_relation(book_id[0], file_type_id[0])
+    # add relation book and year
+    log.write_log("Create relation", "Create relation between id\'s {} and {}".format(book_id[0], year_id[0]))
+    ru.add_bi_directional_relation(book_id[0], year_id[0])
+    # add relation book and size category
+    log.write_log("Create relation", "Create relation between id\'s {} and {}".format(book_id[0], size_cat_id[0]))
+    ru.add_bi_directional_relation(book_id[0], size_cat_id[0])
 
-parse_and_split_folders(data_list)
-parse_and_split_authors(data_list)
-parse_file_name_and_fetch_details(data_list)
-size_categorizing(data_list)
-
-# index = 0
-# for i in data_list:
-#     index += 1
-#     if index < 110:
-#         continue
-#     if index > 120 :
-#         break
-#     print(i[4], '\n\n')
-
-log_file_name = 'log.txt'
-
-def read_index():
-    if os.path.exists(log_file_name) == True:
-        log_file = open(log_file_name,'r+')
-        lines = log_file.readlines()
-    else:
-        lines = []
-    return lines
-
-def write_index(index):
-    log_file = open(log_file_name,'w+')
-    log_file.write(str(index))
-
-current_index = read_index()
-if len(current_index) > 0:
-    current_index = int(current_index[0])
-else:
-    current_index = 0
-
+# function for save dataset file list to database
 def insert_to_db(data_list):
     ffu = mff.File_and_Folder_Utility()
-    ru = mff.Relation_Utility()
-    si = ffu.calc_session_id()
-    documents_folder_id = ffu.create_folder_on_kodbox('Documents', 'Desktop', si)
-    books_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Books', documents_folder_id[0], si)
-    details_folder_id      = ffu.create_folder_on_kodbox_with_parent_id('Details', documents_folder_id[0], si)
-    size_cats_folder_id    = ffu.create_folder_on_kodbox_with_parent_id('Size categories', details_folder_id[0], si)
-    years_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Years', details_folder_id[0], si)
-    types_folder_id        = ffu.create_folder_on_kodbox_with_parent_id('Types', details_folder_id[0], si)
-    authors_folder_id      = ffu.create_folder_on_kodbox_with_parent_id('Authors', details_folder_id[0], si)
-    #_id 
-    writers_folder_id = ffu.create_folder_on_kodbox_with_parent_id('Writers', authors_folder_id[0],si)
-    editors_folder_id = ffu.create_folder_on_kodbox_with_parent_id('Editors', authors_folder_id[0],si)
-    #_id 
-    properties_folder_id = ffu.create_folder_on_kodbox_with_parent_id('Properties', details_folder_id[0], si)    
+    si = ffu.calc_session_id()   
+    print(10)
+    books_folder_id, size_cats_folder_id, years_folder_id, types_folder_id, \
+        authors_folder_id, writers_folder_id, editors_folder_id, \
+        properties_folder_id = create_or_select_requirement_folders(si)
 
-
-    # folders_folder_id      = ffu.create_folder_on_kodbox_with_parent_id('Folders', documents_folder_id[0], si)
     index = 0
     data_list_count = len(data_list)
+    print(11)
     for dl in data_list:
         index += 1
-        write_index(index)
+        log.write_index(index)
         # change index for ignore items and start add folder from this index
         if index < current_index:
            continue
-        # if index > 120 :
-        #     break
         print('Item    {}    from   {}'.format(index, data_list_count))
         folders = dl[0]
         # is_folder     = dl[1]
@@ -200,61 +110,47 @@ def insert_to_db(data_list):
         size_cat      = dl[10]
         
         parent_id = books_folder_id
+        log.write_log("Create/Select folder", "Create/Select parent folder of book = {}.".format(folders))
         for f in folders:
             parent_id = ffu.create_folder_on_kodbox_with_parent_id(f, parent_id[0], si)
-            # print(f)
+
         # 1st property book name
+        log.write_log("Create/Select file", "Create/Select book\'s file = \"{}\".".format(book_name))
         book_id = ffu.create_file_on_kodbox_with_parent_id(book_name, parent_id[0], si)
-        # print('book_id', book_id)
         
         # 2nd property properties of book
         properties_id_list = []
         for prop in properties:
+            log.write_log("Create/Select folder", "Create/Select book\'s property = \"{}\".".format(prop))
             properties_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(prop, properties_folder_id[0], si))
         
         # 3th property authors list
         authors_id_list = []
         if authors == 'Unknown':
+            log.write_log("Create/Select folder", "Create/Select book\'s unknown author = \"{}\".".format(authors))
             authors_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(authors, authors_folder_id[0], si))
         else:
             for auth in range(len(authors[1])):
                 if authors[0] == 'editors':
+                    log.write_log("Create/Select folder", "Create/Select book\'s editor = \"{}\".".format(auth))
                     authors_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(auth, editors_folder_id[0], si))
                 elif authors[0] == 'writers':
+                    log.write_log("Create/Select folder", "Create/Select book\'s writer = \"{}\".".format(auth))
                     authors_id_list.append(ffu.create_folder_on_kodbox_with_parent_id(auth, writers_folder_id[0], si))
+
         # 4th property file type
+        log.write_log("Create/Select folder", "Create/Select book\'s file type = \"{}\".".format(file_type))
         file_type_id = ffu.create_folder_on_kodbox_with_parent_id(file_type, types_folder_id[0], si)
 
         # 5th property year
+        log.write_log("Create/Select folder", "Create/Select book\'s year published = \"{}\".".format(year))
         year_id = ffu.create_folder_on_kodbox_with_parent_id(year, years_folder_id[0], si)
 
         # 6th property size category
+        log.write_log("Create/Select folder", "Create/Select book\'s size category = \"{}\".".format(size_cat))
         size_cat_id = ffu.create_folder_on_kodbox_with_parent_id(size_cat, size_cats_folder_id[0], si)
-
-        # add relation book and properties
-        # print(properties_id_list)
-        for pil in properties_id_list:
-            # print(dil[0])
-            # print(book_id)
-            ru.add_relation(book_id[0], pil[0])
-            ru.add_relation(pil[0], book_id[0])
-        # print(300)
-        # add relation book and authors(editors/writers)
-        for ail in authors_id_list:
-            ru.add_relation(book_id[0], ail[0])
-            ru.add_relation(ail[0], book_id[0])
-        # add relation book and file type
-        ru.add_relation(book_id[0], file_type_id[0])
-        ru.add_relation(file_type_id[0], book_id[0])
-        # add relation book and year
-        ru.add_relation(book_id[0], year_id[0])
-        ru.add_relation(year_id[0], book_id[0])
-        # add relation book and size category
-        ru.add_relation(book_id[0], size_cat_id[0])
-        ru.add_relation(size_cat_id[0], book_id[0])
+        
+        # Create relation for files and folders that created.
+        create_relations(book_id, properties_id_list, authors_id_list, file_type_id, year_id, size_cat_id)
 
 insert_to_db(data_list)
-
-# df = pd.DataFrame (data_list, columns = ['folder', 'is_folder', 'details', 'authors', 'book_name', 'ISBN',
-#                                         'type', 'year', 'size_byte', 'sixe_megabyte', 'size_cat' ])
-# df.to_csv("./file.csv", sep=',',index=False)
