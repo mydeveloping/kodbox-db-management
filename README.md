@@ -21,7 +21,9 @@ python parse_and_create_dataset.py
 
 >Note2: If you don't use mysql default config, must change config from Database in "db_tools.py ".
 
->Note3: If your code stops with any problem (like power off the system, wrong press Ctrl + C or Ctrl + Pause/Break, or any others.) when you run the code again, this program continues from the last index of data..
+>Note3: If your code stops with any problem (like power off the system, wrong press Ctrl + C or Ctrl + Pause/Break, or any others.) when you run the code again, this program continues from the last index of data.
+
+>Note4: Any action performed on the data is logged into a log file. And you can find the file of these actions in the project folder.
 
 # Files and containing functions internal:
 
